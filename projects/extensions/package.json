@@ -1,8 +1,7 @@
 {
   "name": "@dcnx/mat-extensions",
-  "version": "18.2.0",
+  "version": "18.3.0",
   "description": "Angular Material Extensions",
-
   "keywords": [
     "angular",
     "angular-material",
@@ -68,5 +67,8 @@
     "@angular/core": ">=18.2.0",
     "@angular/material": ">=18.2.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://pkgs.dev.azure.com/vaikoon/_packaging/deltaconx/npm/registry/"
+  }
 }
