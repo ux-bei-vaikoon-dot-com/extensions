@@ -31,15 +31,19 @@ import {
   ChangeDetectorRef,
   Component,
   Directive,
+  effect,
   ElementRef,
+  EnvironmentProviders,
   Inject,
   inject,
   InjectionToken,
   Injector,
   Input,
+  makeEnvironmentProviders,
   NgZone,
   OnDestroy,
   Optional,
+  Signal,
   TemplateRef,
   ViewChild,
   ViewContainerRef,
@@ -115,6 +119,15 @@ export const MTX_TOOLTIP_DEFAULT_OPTIONS = new InjectionToken<MtxTooltipDefaultO
   }
 );
 
+export interface MtxTooltipDelayDefaultOptions {
+  /** The delay of the tooltip. -1 is for disabling tooltips. */
+  tooltipDelay: Signal<number>;
+}
+
+export const MTX_TOOLTIP_DELAY_OPTIONS = new InjectionToken<MtxTooltipDelayDefaultOptions>(
+  'tooltip-delay-options'
+);
+
 /** Default `mtxTooltip` options that can be overridden. */
 export interface MtxTooltipDefaultOptions {
   /** Default delay when the tooltip is shown. */
@@ -163,6 +176,12 @@ const MIN_VIEWPORT_TOOLTIP_THRESHOLD = 8;
 const UNBOUNDED_ANCHOR_GAP = 8;
 const MIN_HEIGHT = 24;
 const MAX_WIDTH = 200;
+
+export function provideTooltipDelayOptions(
+  factory: () => MtxTooltipDelayDefaultOptions
+): EnvironmentProviders {
+  return makeEnvironmentProviders([{ provide: MTX_TOOLTIP_DELAY_OPTIONS, useFactory: factory }]);
+}
 
 /**
  * Directive that attaches a material design tooltip to the host element. Animates the showing and
@@ -371,6 +390,8 @@ export class MtxTooltip implements OnDestroy, AfterViewInit {
 
   private _injector = inject(Injector);
 
+  private tooltipDelay = inject(MTX_TOOLTIP_DELAY_OPTIONS, { optional: true });
+
   constructor(
     private _overlay: Overlay,
     private _elementRef: ElementRef<HTMLElement>,
@@ -405,6 +426,15 @@ export class MtxTooltip implements OnDestroy, AfterViewInit {
       if (_defaultOptions.touchGestures) {
         this.touchGestures = _defaultOptions.touchGestures;
       }
+    }
+
+    if (this.tooltipDelay) {
+      const { tooltipDelay } = this.tooltipDelay;
+
+      effect(() => {
+        this._disabled = tooltipDelay() === -1;
+        this._showDelay = tooltipDelay();
+      });
     }
 
     _dir.change.pipe(takeUntil(this._destroyed)).subscribe(() => {
