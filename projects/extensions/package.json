@@ -2,6 +2,14 @@
   "name": "@dcnx/mat-extensions",
   "version": "18.3.0",
   "description": "Angular Material Extensions",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "nzbin<nzb329@163.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ng-matero/extensions.git"
+  },
   "keywords": [
     "angular",
     "angular-material",
