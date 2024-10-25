@@ -2,10 +2,7 @@
   "name": "@dcnx/mat-extensions",
   "version": "18.3.0",
   "description": "Angular Material Extensions",
-  "publishConfig": {
-    "access": "public"
-  },
-  "author": "nzbin<nzb329@163.com>",
+  "author": "Vaikoon",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ng-matero/extensions.git"
@@ -77,6 +74,6 @@
   },
   "sideEffects": false,
   "publishConfig": {
-    "registry": "https://pkgs.dev.azure.com/vaikoon/_packaging/deltaconx/npm/registry/"
+    "registry": "https://gitlab.com/api/v4/projects/62730181/packages/npm/"
   }
 }

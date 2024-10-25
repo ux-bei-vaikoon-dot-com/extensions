@@ -13,5 +13,9 @@
   "dependencies": {
     "tslib": "^2.4.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://gitlab.com/api/v4/projects/62730181/packages/npm/"
+  }
+
 }

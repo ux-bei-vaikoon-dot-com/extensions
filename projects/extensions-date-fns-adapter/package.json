@@ -2,9 +2,6 @@
   "name": "@ng-matero/extensions-date-fns-adapter",
   "version": "18.0.0",
   "description": "Angular Material Extensions date-fns Adapter",
-  "publishConfig": {
-    "access": "public"
-  },
   "author": "Jelle Bruisten <jelle_bruisten@hotmail.com>",
   "repository": {
     "type": "git",
@@ -21,5 +18,8 @@
   "dependencies": {
     "tslib": "^2.4.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://gitlab.com/api/v4/projects/62730181/packages/npm/"
+  }
 }
