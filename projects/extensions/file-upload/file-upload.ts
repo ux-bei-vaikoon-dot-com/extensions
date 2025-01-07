@@ -22,8 +22,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrl: './file-upload.scss',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
-  imports: [MatIcon, NgOptimizedImage],
+  imports: [MatIcon],
 })
 export class MtxFileUpload {
   imageName = signal<string | null>(null);
