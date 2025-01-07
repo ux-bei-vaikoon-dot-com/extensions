@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -10,13 +10,12 @@ import { MtxDialog } from '@dcnx/mat-extensions/dialog';
   selector: 'dialog-example',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  standalone: true,
   imports: [MatButtonModule],
 })
 export class AppComponent {
-  animal?: string;
+  private mtxDialog = inject(MtxDialog);
 
-  constructor(private mtxDialog: MtxDialog) {}
+  animal?: string;
 
   openOriginal() {
     const dialogRef = this.mtxDialog.originalOpen(DialogOriginalOverviewComponent, {
@@ -34,14 +33,11 @@ export class AppComponent {
 @Component({
   selector: 'dialog-overview',
   templateUrl: './dialog.html',
-  standalone: true,
   imports: [MatFormFieldModule, MatInputModule, FormsModule, MatDialogModule, MatButtonModule],
 })
 export class DialogOriginalOverviewComponent {
-  constructor(
-    public dialogRef: MatDialogRef<DialogOriginalOverviewComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  dialogRef = inject<MatDialogRef<DialogOriginalOverviewComponent>>(MatDialogRef);
+  data = inject(MAT_DIALOG_DATA);
 
   onNoClick(): void {
     this.dialogRef.close();

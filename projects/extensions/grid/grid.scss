@@ -110,7 +110,12 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
   }
 
   .mat-sort-header-icon {
-    margin: 0 4px;
+    margin-left: 4px;
+
+    [dir='rtl'] & {
+      margin-left: 0;
+      margin-right: 4px;
+    }
   }
 
   .mat-header-cell-inner {
@@ -137,7 +142,7 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
   .mtx-grid-checkbox-cell {
     width: 60px;
     min-width: 60px;
-    padding: 0 calc((60px - var(--mdc-checkbox-state-layer-size)) / 2);
+    padding: 0 calc((60px - var(--mdc-checkbox-state-layer-size, 40px)) / 2);
   }
 }
 
@@ -152,7 +157,7 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: var(--mat-table-header-container-height);
+  min-height: var(--mat-table-header-container-height, 56px);
   padding: 8px;
   box-sizing: border-box;
 
@@ -203,7 +208,7 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
 .mtx-grid-statusbar {
   display: flex;
   align-items: center;
-  min-height: var(--mat-table-header-container-height);
+  min-height: var(--mat-table-header-container-height, 56px);
   padding: 8px;
   box-sizing: border-box;
 
@@ -226,19 +231,18 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
   display: inline-block;
   vertical-align: middle;
 
-
   @include token-utils.use-tokens($_tokens...) {
-    $compat-size: token-utils.get-token-variable(row-expand-button-size);
+    $compat-size: token-utils.get-token-variable(row-expand-button-size, 40px);
 
-    width: var(--mdc-icon-button-state-layer-size, var($compat-size));
-    height: var(--mdc-icon-button-state-layer-size, var($compat-size));
+    width: var(--mdc-icon-button-state-layer-size, $compat-size);
+    height: var(--mdc-icon-button-state-layer-size, $compat-size);
   }
 }
 
 .mtx-grid-expansion-detail {
   display: flex;
   align-items: center;
-  min-height: var(--mat-table-row-item-container-height);
+  min-height: var(--mat-table-row-item-container-height, 52px);
   overflow: hidden;
 }
 
@@ -251,10 +255,4 @@ $_tokens: tokens-mtx-grid.$prefix, tokens-mtx-grid.get-token-slots();
   +mtx-grid-cell {
     vertical-align: middle;
   }
-}
-
-.mtx-grid-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
 }

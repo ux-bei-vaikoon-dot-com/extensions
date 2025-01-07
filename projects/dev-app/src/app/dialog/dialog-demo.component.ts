@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -11,16 +11,13 @@ import { TranslateService } from '@ngx-translate/core';
   selector: 'dev-dialog-demo',
   templateUrl: './dialog-demo.component.html',
   styleUrl: './dialog-demo.component.scss',
-  standalone: true,
   imports: [MatButtonModule],
 })
 export class DialogDemoComponent implements OnInit {
-  animal?: string;
+  private mtxDialog = inject(MtxDialog);
+  private translate = inject(TranslateService);
 
-  constructor(
-    private mtxDialog: MtxDialog,
-    public translate: TranslateService
-  ) {}
+  animal?: string;
 
   ngOnInit() {}
 
@@ -102,14 +99,11 @@ export class DialogDemoComponent implements OnInit {
       <button mat-button [mat-dialog-close]="data.animal" cdkFocusInitial>Ok</button>
     </div>
   `,
-  standalone: true,
   imports: [FormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
 })
 export class DialogOverviewComponent {
-  constructor(
-    public dialogRef: MatDialogRef<DialogOverviewComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  dialogRef = inject<MatDialogRef<DialogOverviewComponent>>(MatDialogRef);
+  data = inject(MAT_DIALOG_DATA);
 
   onNoClick(): void {
     this.dialogRef.close();

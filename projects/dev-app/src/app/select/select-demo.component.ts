@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ThemePalette } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,13 +9,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MtxSelectModule } from '@dcnx/mat-extensions/select';
+import { MtxSelectIntl, MtxSelectModule } from '@dcnx/mat-extensions/select';
 
 @Component({
   selector: 'dev-app-select',
   templateUrl: './select-demo.component.html',
   styleUrl: './select-demo.component.scss',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     FormsModule,
@@ -24,17 +24,21 @@ import { MtxSelectModule } from '@dcnx/mat-extensions/select';
     MatInputModule,
     MatIconModule,
     MatSlideToggleModule,
+    MatButtonModule,
     MatSelectModule,
     MtxSelectModule,
   ],
 })
 export class SelectDemoComponent {
+  private intl = inject(MtxSelectIntl);
+
   themeColor: ThemePalette = 'primary';
 
   disabled = false;
   readonly = false;
   multipleSelect = false;
   closeOnSelect = true;
+  deselectOnClick = false;
 
   items = [
     { id: 1, name: 'Apple' },
@@ -128,6 +132,12 @@ export class SelectDemoComponent {
   ];
 
   control = new FormControl({ value: 1, disabled: true }, Validators.required);
+
+  changeIntl() {
+    this.intl.placeholder = 'custom placeholder';
+    this.intl.notFoundText = 'custom notFoundText';
+    this.intl.clearAllText = 'custom clearAllText';
+  }
 
   changeState(e: MatSlideToggleChange) {
     if (e.checked) {

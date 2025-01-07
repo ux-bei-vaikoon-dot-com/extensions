@@ -1,4 +1,4 @@
-import { Injectable, TemplateRef } from '@angular/core';
+import { Injectable, TemplateRef, inject } from '@angular/core';
 import { ComponentType } from '@angular/cdk/portal';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
@@ -11,13 +11,13 @@ const defaults: MtxDialogData = {
   description: '',
   buttons: [
     {
-      color: 'warn',
-      text: 'OK',
-      focusInitial: true,
+      text: 'Cancel',
       onClick: () => {},
     },
     {
-      text: 'CLOSE',
+      color: 'warn',
+      text: 'OK',
+      focusInitial: true,
       onClick: () => {},
     },
   ],
@@ -28,7 +28,7 @@ const defaults: MtxDialogData = {
 
 @Injectable({ providedIn: 'root' })
 export class MtxDialog {
-  constructor(public dialog: MatDialog) {}
+  dialog = inject(MatDialog);
 
   originalOpen(
     componentOrTemplateRef: ComponentType<any> | TemplateRef<any> = MtxDialogContainer,
@@ -77,13 +77,14 @@ export class MtxDialog {
       description,
       buttons: [
         {
-          color: 'warn',
-          text: 'OK',
-          onClick: () => onOk(),
+          text: 'Cancel',
+          onClick: () => onClose(),
         },
         {
-          text: 'CLOSE',
-          onClick: () => onClose(),
+          color: 'warn',
+          text: 'OK',
+          focusInitial: true,
+          onClick: () => onOk(),
         },
       ],
     });

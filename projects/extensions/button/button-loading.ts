@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   ViewContainerRef,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import { ThemePalette } from '@angular/material/core';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -20,9 +21,12 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
              [mat-icon-button][loading],
              [mat-fab][loading],
              [mat-mini-fab][loading]`,
-  standalone: true,
 })
 export class MatButtonLoading implements OnChanges {
+  private _elementRef = inject<ElementRef<HTMLButtonElement>>(ElementRef);
+  private _viewContainerRef = inject(ViewContainerRef);
+  private _renderer = inject(Renderer2);
+
   private spinner!: ComponentRef<MatProgressSpinner> | null;
 
   @Input({ transform: booleanAttribute }) loading = false;
@@ -30,12 +34,6 @@ export class MatButtonLoading implements OnChanges {
   @Input({ transform: booleanAttribute }) disabled = false;
 
   @Input() color: ThemePalette;
-
-  constructor(
-    private _elementRef: ElementRef<HTMLButtonElement>,
-    private _viewContainerRef: ViewContainerRef,
-    private _renderer: Renderer2
-  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes.loading) {

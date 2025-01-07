@@ -1,8 +1,8 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, importProvidersFrom } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Routes } from '@angular/router';
-import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { DocHeadingComponent } from '../../../shared/doc-heading/doc-heading';
 import { DocViewer } from '../../../shared/doc-viewer/doc-viewer';
@@ -14,21 +14,19 @@ import { dialogOriginalExampleConfig } from './examples/original';
 @Component({
   selector: 'app-dialog-overview',
   templateUrl: './dialog-overview.html',
-  standalone: true,
   imports: [DocHeadingComponent, ExampleViewer, AsyncPipe],
 })
 export class DialogOverviewComponent {
-  constructor(public route: ActivatedRoute) {}
+  route = inject(ActivatedRoute);
 }
 
 @Component({
   selector: 'app-dialog-api',
   templateUrl: './dialog-api.html',
-  standalone: true,
   imports: [DocViewer, AsyncPipe],
 })
 export class DialogApiComponent {
-  constructor(public route: ActivatedRoute) {}
+  route = inject(ActivatedRoute);
 }
 
 export function TranslateHttpLoaderFactory(http: HttpClient) {
@@ -45,15 +43,13 @@ export const routes: Routes = [
       examples: [dialogBasicExampleConfig, dialogOriginalExampleConfig, dialogI18nExampleConfig],
     },
     providers: [
-      importProvidersFrom(
-        TranslateModule.forRoot({
-          loader: {
-            provide: TranslateLoader,
-            useFactory: TranslateHttpLoaderFactory,
-            deps: [HttpClient],
-          },
-        })
-      ),
+      provideTranslateService({
+        loader: {
+          provide: TranslateLoader,
+          useFactory: TranslateHttpLoaderFactory,
+          deps: [HttpClient],
+        },
+      }),
     ],
   },
   {

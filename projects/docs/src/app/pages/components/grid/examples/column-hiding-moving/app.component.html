@@ -3,27 +3,29 @@
   <mat-checkbox [(ngModel)]="columnSortable">Column Sorting</mat-checkbox>
   <mat-checkbox [(ngModel)]="columnPinnable">Column Pinning</mat-checkbox>
 
-  <label>ColumnHideableChecked:</label>
+  <label for="">ColumnHideableChecked:</label>
   <mat-radio-group [(ngModel)]="columnHideableChecked">
     <mat-radio-button value="show">Show</mat-radio-button>
     <mat-radio-button value="hide">Hide</mat-radio-button>
   </mat-radio-group>
 </div>
 
-<mtx-grid [data]="list" #grid
-          [columns]="columns"
-          [showToolbar]="true"
-          [toolbarTitle]="'Data Grid'"
-          [columnHideable]="columnHideable"
-          [columnHideableChecked]="columnHideableChecked"
-          [columnSortable]="columnSortable"
-          [columnPinnable]="columnPinnable"
-          (columnChange)="log($event)"
-          [showColumnMenuHeader]="true"
-          [columnMenuHeaderText]="'Title'"
-          [showColumnMenuFooter]="true"
-          [columnMenuFooterTemplate]="menuFooter">
-</mtx-grid>
+<mtx-grid
+  [data]="list"
+  #grid
+  [columns]="columns"
+  [showToolbar]="true"
+  [toolbarTitle]="'Data Grid'"
+  [columnHideable]="columnHideable"
+  [columnHideableChecked]="columnHideableChecked"
+  [columnSortable]="columnSortable"
+  [columnPinnable]="columnPinnable"
+  (columnChange)="log($event)"
+  [showColumnMenuHeader]="true"
+  [columnMenuHeaderText]="'Title'"
+  [showColumnMenuFooter]="true"
+  [columnMenuFooterTemplate]="menuFooter"
+></mtx-grid>
 
 <ng-template #menuFooter>
   <button>Save</button>

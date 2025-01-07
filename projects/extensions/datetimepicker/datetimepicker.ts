@@ -17,8 +17,8 @@ import {
 } from '@angular/cdk/portal';
 import { DOCUMENT } from '@angular/common';
 import {
-  AfterContentInit,
   afterNextRender,
+  AfterViewInit,
   booleanAttribute,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -26,13 +26,11 @@ import {
   ComponentRef,
   EventEmitter,
   inject,
-  Inject,
   InjectionToken,
   Injector,
   Input,
   OnDestroy,
   OnInit,
-  Optional,
   Output,
   ViewChild,
   ViewContainerRef,
@@ -42,12 +40,15 @@ import { ThemePalette } from '@angular/material/core';
 import { merge, Subject, Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { MatButton } from '@angular/material/button';
 import { DatetimeAdapter } from '@dcnx/mat-extensions/core';
 import { MtxCalendar } from './calendar';
 import { mtxDatetimepickerAnimations } from './datetimepicker-animations';
 import { createMissingDateImplError } from './datetimepicker-errors';
 import { MtxDatetimepickerFilterType } from './datetimepicker-filtertype';
 import { MtxDatetimepickerInput } from './datetimepicker-input';
+import { MtxDatetimepickerIntl } from './datetimepicker-intl';
 import { MtxCalendarView, MtxDatetimepickerType } from './datetimepicker-types';
 
 /** Used to generate a unique ID for each datetimepicker instance. */
@@ -109,10 +110,11 @@ export const MTX_DATETIMEPICKER_SCROLL_STRATEGY_FACTORY_PROVIDER = {
   ],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
-  imports: [MtxCalendar, CdkPortalOutlet],
+  imports: [CdkTrapFocus, MtxCalendar, CdkPortalOutlet, MatButton],
 })
-export class MtxDatetimepickerContent<D> implements OnInit, AfterContentInit, OnDestroy {
+export class MtxDatetimepickerContent<D> implements OnInit, AfterViewInit, OnDestroy {
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+
   @ViewChild(MtxCalendar, { static: true }) _calendar!: MtxCalendar<D>;
 
   @Input() color: ThemePalette;
@@ -140,7 +142,20 @@ export class MtxDatetimepickerContent<D> implements OnInit, AfterContentInit, On
   /** The view of the calendar. */
   view: MtxCalendarView = 'month';
 
-  constructor(private _changeDetectorRef: ChangeDetectorRef) {}
+  /** Text for the close button. */
+  _closeButtonText: string = '';
+
+  /** Whether the close button currently has focus. */
+  _closeButtonFocused: boolean = false;
+
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {
+    const intl = inject(MtxDatetimepickerIntl);
+
+    this._closeButtonText = intl.closeCalendarLabel;
+  }
 
   _viewChanged(view: MtxCalendarView): void {
     this.view = view;
@@ -150,8 +165,8 @@ export class MtxDatetimepickerContent<D> implements OnInit, AfterContentInit, On
     this._animationState = this.datetimepicker.touchUi ? 'enter-dialog' : 'enter-dropdown';
   }
 
-  ngAfterContentInit() {
-    this._calendar._focusActiveCell();
+  ngAfterViewInit() {
+    this._calendar.focusActiveCell();
   }
 
   ngOnDestroy() {
@@ -191,9 +206,14 @@ export class MtxDatetimepickerContent<D> implements OnInit, AfterContentInit, On
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   preserveWhitespaces: false,
-  standalone: true,
 })
 export class MtxDatetimepicker<D> implements OnDestroy {
+  private _overlay = inject(Overlay);
+  private _viewContainerRef = inject(ViewContainerRef);
+  private _scrollStrategy = inject(MTX_DATETIMEPICKER_SCROLL_STRATEGY);
+  private _dateAdapter = inject<DatetimeAdapter<D>>(DatetimeAdapter, { optional: true })!;
+  private _dir = inject(Directionality, { optional: true });
+
   private _document = inject(DOCUMENT);
 
   private _injector = inject(Injector);
@@ -298,13 +318,10 @@ export class MtxDatetimepicker<D> implements OnDestroy {
   /** Previous selected value. */
   oldValue: D | null = null;
 
-  constructor(
-    private _overlay: Overlay,
-    private _viewContainerRef: ViewContainerRef,
-    @Inject(MTX_DATETIMEPICKER_SCROLL_STRATEGY) private _scrollStrategy: any,
-    @Optional() private _dateAdapter: DatetimeAdapter<D>,
-    @Optional() private _dir: Directionality
-  ) {
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {
     if (!this._dateAdapter) {
       throw createMissingDateImplError('DateAdapter');
     }
@@ -343,6 +360,9 @@ export class MtxDatetimepicker<D> implements OnDestroy {
    * elements rather then just clock. When `touchUi` is enabled this will be disabled.
    */
   @Input({ transform: booleanAttribute }) timeInput = false;
+
+  /** Whether the time input should be auto-focused after view init.  */
+  @Input({ transform: booleanAttribute }) timeInputAutoFocus = true;
 
   /** Whether the datetimepicker pop-up should be disabled. */
   @Input({ transform: booleanAttribute })
@@ -423,7 +443,7 @@ export class MtxDatetimepicker<D> implements OnDestroy {
     if (!this._selected) {
       this._selected = this._dateAdapter.today();
       this.selectedChanged.emit(this._selected);
-    } else if (!this._dateAdapter.sameDatetime(this.oldValue, this._selected)) {
+    } else {
       this.selectedChanged.emit((this._selected as D) || (this.oldValue as D));
     }
     this.close();
@@ -551,7 +571,7 @@ export class MtxDatetimepicker<D> implements OnDestroy {
           isDialog ? 'cdk-overlay-dark-backdrop' : 'mat-overlay-transparent-backdrop',
           this._backdropHarnessClass,
         ],
-        direction: this._dir,
+        direction: this._dir || undefined,
         scrollStrategy: isDialog ? this._overlay.scrollStrategies.block() : this._scrollStrategy(),
         panelClass: `mtx-datetimepicker-${isDialog ? 'dialog' : 'popup'}`,
       })

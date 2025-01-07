@@ -1,13 +1,25 @@
 import {
+  DOWN_ARROW,
+  END,
+  ENTER,
+  HOME,
+  LEFT_ARROW,
+  PAGE_DOWN,
+  PAGE_UP,
+  RIGHT_ARROW,
+  SPACE,
+  UP_ARROW,
+} from '@angular/cdk/keycodes';
+import {
   AfterContentInit,
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
-  Inject,
   Input,
-  Optional,
   Output,
+  ViewChild,
   ViewEncapsulation,
+  inject,
 } from '@angular/core';
 import {
   DatetimeAdapter,
@@ -15,9 +27,9 @@ import {
   MtxDatetimeFormats,
 } from '@dcnx/mat-extensions/core';
 import { MtxCalendarBody, MtxCalendarCell } from './calendar-body';
-import { mtxDatetimepickerAnimations } from './datetimepicker-animations';
 import { createMissingDateImplError } from './datetimepicker-errors';
 import { MtxDatetimepickerType } from './datetimepicker-types';
+import { Directionality } from '@angular/cdk/bidi';
 
 /**
  * An internal component used to display a single year in the datetimepicker.
@@ -27,13 +39,15 @@ import { MtxDatetimepickerType } from './datetimepicker-types';
   selector: 'mtx-year-view',
   templateUrl: 'year-view.html',
   exportAs: 'mtxYearView',
-  animations: [mtxDatetimepickerAnimations.slideCalendar],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [MtxCalendarBody],
 })
 export class MtxYearView<D> implements AfterContentInit {
+  _adapter = inject<DatetimeAdapter<D>>(DatetimeAdapter, { optional: true })!;
+  private _dir = inject(Directionality, { optional: true });
+  private _dateFormats = inject<MtxDatetimeFormats>(MTX_DATETIME_FORMATS, { optional: true })!;
+
   @Input() type: MtxDatetimepickerType = 'date';
 
   /** A function used to filter which dates are selectable. */
@@ -44,6 +58,12 @@ export class MtxYearView<D> implements AfterContentInit {
 
   /** Emits when any date is selected. */
   @Output() readonly _userSelection = new EventEmitter<void>();
+
+  /** Emits when any date is activated. */
+  @Output() readonly activeDateChange: EventEmitter<D> = new EventEmitter<D>();
+
+  /** The body of calendar table */
+  @ViewChild(MtxCalendarBody) _mtxCalendarBody!: MtxCalendarBody;
 
   /** Grid of calendar cells representing the months of the year. */
   _months!: MtxCalendarCell[][];
@@ -60,12 +80,10 @@ export class MtxYearView<D> implements AfterContentInit {
    */
   _selectedMonth!: number | null;
 
-  _calendarState!: string;
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
 
-  constructor(
-    @Optional() public _adapter: DatetimeAdapter<D>,
-    @Optional() @Inject(MTX_DATETIME_FORMATS) private _dateFormats: MtxDatetimeFormats
-  ) {
+  constructor() {
     if (!this._adapter) {
       throw createMissingDateImplError('DatetimeAdapter');
     }
@@ -77,14 +95,11 @@ export class MtxYearView<D> implements AfterContentInit {
     this._activeDate = this._adapter.today();
   }
 
-  private _activeDate: D;
-
   /** The date to display in this year view (everything other than the year is ignored). */
   @Input()
   get activeDate(): D {
     return this._activeDate;
   }
-
   set activeDate(value: D) {
     const oldActiveDate = this._activeDate;
     this._activeDate = value || this._adapter.today();
@@ -94,26 +109,20 @@ export class MtxYearView<D> implements AfterContentInit {
       !this._adapter.sameYear(oldActiveDate, this._activeDate)
     ) {
       this._init();
-      // if (oldActiveDate < this._activeDate) {
-      //  this.calendarState('right');
-      // } else {
-      //  this.calendarState('left');
-      // }
     }
   }
-
-  private _selected!: D;
+  private _activeDate: D;
 
   /** The currently selected date. */
   @Input()
-  get selected(): D {
+  get selected(): D | null {
     return this._selected;
   }
-
-  set selected(value: D) {
+  set selected(value: D | null) {
     this._selected = value;
     this._selectedMonth = this._getMonthInCurrentYear(this.selected);
   }
+  private _selected: D | null = null;
 
   ngAfterContentInit() {
     this._init();
@@ -148,10 +157,6 @@ export class MtxYearView<D> implements AfterContentInit {
     }
   }
 
-  _calendarStateDone() {
-    this._calendarState = '';
-  }
-
   /** Initializes this month view. */
   private _init() {
     this._selectedMonth = this._getMonthInCurrentYear(this.selected);
@@ -171,8 +176,10 @@ export class MtxYearView<D> implements AfterContentInit {
    * Gets the month in this year that the given Date falls on.
    * Returns null if the given Date is in another year.
    */
-  private _getMonthInCurrentYear(date: D) {
-    return this._adapter.sameYear(date, this.activeDate) ? this._adapter.getMonth(date) : null;
+  private _getMonthInCurrentYear(date: D | null) {
+    return date && this._adapter.sameYear(date, this.activeDate)
+      ? this._adapter.getMonth(date)
+      : null;
   }
 
   /** Creates an MdCalendarCell for the given month. */
@@ -194,10 +201,6 @@ export class MtxYearView<D> implements AfterContentInit {
       this._isMonthEnabled(month)
     );
   }
-
-  // private calendarState(direction: string): void {
-  //   this._calendarState = direction;
-  // }
 
   /** Whether the given month is enabled. */
   private _isMonthEnabled(month: number) {
@@ -225,5 +228,73 @@ export class MtxYearView<D> implements AfterContentInit {
     }
 
     return false;
+  }
+
+  /** Handles keydown events on the calendar body when calendar is in year view. */
+  _handleCalendarBodyKeydown(event: KeyboardEvent): void {
+    // TODO(mmalerba): We currently allow keyboard navigation to disabled dates, but just prevent
+    // disabled ones from being selected. This may not be ideal, we should look into whether
+    // navigation should skip over disabled dates, and if so, how to implement that efficiently.
+
+    const oldActiveDate = this._activeDate;
+    const isRtl = this._isRtl();
+
+    switch (event.keyCode) {
+      case LEFT_ARROW:
+        this.activeDate = this._adapter.addCalendarMonths(this._activeDate, isRtl ? 1 : -1);
+        break;
+      case RIGHT_ARROW:
+        this.activeDate = this._adapter.addCalendarMonths(this._activeDate, isRtl ? -1 : 1);
+        break;
+      case UP_ARROW:
+        this.activeDate = this._adapter.addCalendarMonths(this._activeDate, -4);
+        break;
+      case DOWN_ARROW:
+        this.activeDate = this._adapter.addCalendarMonths(this._activeDate, 4);
+        break;
+      case HOME:
+        this.activeDate = this._adapter.addCalendarMonths(
+          this._activeDate,
+          -this._adapter.getMonth(this._activeDate)
+        );
+        break;
+      case END:
+        this.activeDate = this._adapter.addCalendarMonths(
+          this._activeDate,
+          11 - this._adapter.getMonth(this._activeDate)
+        );
+        break;
+      case PAGE_UP:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, event.altKey ? -10 : -1);
+        break;
+      case PAGE_DOWN:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, event.altKey ? 10 : 1);
+        break;
+      case ENTER:
+      case SPACE:
+        this._monthSelected(this._adapter.getMonth(this._activeDate));
+        break;
+      default:
+        // Don't prevent default or focus active cell on keys that we don't explicitly handle.
+        return;
+    }
+
+    if (this._adapter.compareDate(oldActiveDate, this.activeDate)) {
+      this.activeDateChange.emit(this.activeDate);
+    }
+
+    this._focusActiveCell();
+    // Prevent unexpected default actions such as form submission.
+    event.preventDefault();
+  }
+
+  /** Focuses the active cell after the microtask queue is empty. */
+  _focusActiveCell() {
+    this._mtxCalendarBody._focusActiveCell();
+  }
+
+  /** Determines whether the user has the RTL layout direction. */
+  private _isRtl() {
+    return this._dir && this._dir.value === 'rtl';
   }
 }

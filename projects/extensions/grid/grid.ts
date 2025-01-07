@@ -9,13 +9,11 @@ import {
   ContentChildren,
   ElementRef,
   EventEmitter,
-  Inject,
   InjectionToken,
   Input,
   KeyValueChangeRecord,
   OnChanges,
   OnDestroy,
-  Optional,
   Output,
   QueryList,
   SimpleChanges,
@@ -24,6 +22,7 @@ import {
   ViewChild,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -49,6 +48,7 @@ import {
   MatTableDataSource,
 } from '@angular/material/table';
 
+import { ColumnResize } from '@dcnx/mat-extensions/column-resize';
 import { MtxIsTemplateRefPipe, MtxToObservablePipe } from '@dcnx/mat-extensions/core';
 import { MtxGridCell } from './cell';
 import { MtxGridColumnMenu } from './column-menu';
@@ -90,7 +90,6 @@ export const MTX_GRID_DEFAULT_OPTIONS = new InjectionToken<MtxGridDefaultOptions
       transition('expanded <=> void', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
     ]),
   ],
-  standalone: true,
   imports: [
     AsyncPipe,
     NgTemplateOutlet,
@@ -127,13 +126,20 @@ export const MTX_GRID_DEFAULT_OPTIONS = new InjectionToken<MtxGridDefaultOptions
   ],
 })
 export class MtxGrid implements OnChanges, AfterViewInit, OnDestroy {
+  private _utils = inject(MtxGridUtils);
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+  private _defaultOptions = inject<MtxGridDefaultOptions>(MTX_GRID_DEFAULT_OPTIONS, {
+    optional: true,
+  });
+
   @ViewChild(MatTable) table!: MatTable<any>;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ContentChildren(MatRowDef) rowDefs!: QueryList<MatRowDef<any>>;
   @ContentChildren(MatHeaderRowDef) headerRowDefs!: QueryList<MatHeaderRowDef>;
   @ContentChildren(MatFooterRow) footerRowDefs!: QueryList<MatFooterRowDef>;
-  @ViewChild('columnMenu') columnMenu!: MtxGridColumnMenu;
+  @ViewChild(ColumnResize) columnResize?: ColumnResize;
+  @ViewChild(MtxGridColumnMenu) columnMenu!: MtxGridColumnMenu;
   @ViewChild('tableContainer') tableContainer!: ElementRef<HTMLDivElement>;
 
   dataSource = new MatTableDataSource();
@@ -391,14 +397,6 @@ export class MtxGrid implements OnChanges, AfterViewInit, OnDestroy {
 
   /** The changed record of row data. */
   rowChangeRecord?: KeyValueChangeRecord<string, any>;
-
-  constructor(
-    private _utils: MtxGridUtils,
-    private _changeDetectorRef: ChangeDetectorRef,
-    @Optional()
-    @Inject(MTX_GRID_DEFAULT_OPTIONS)
-    private _defaultOptions?: MtxGridDefaultOptions
-  ) {}
 
   detectChanges() {
     this._changeDetectorRef.detectChanges();

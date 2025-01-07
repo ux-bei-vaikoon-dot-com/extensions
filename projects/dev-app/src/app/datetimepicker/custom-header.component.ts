@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Inject, Optional } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import {
@@ -113,16 +113,12 @@ import {
       <p>This is an example header component for the datetimepicker.</p>
     }
   `,
-  standalone: true,
   imports: [MatButtonModule, MatIconModule],
 })
 export class CustomHeader<D> {
-  constructor(
-    private _calendar: MtxCalendar<D>,
-    @Optional() public _dateAdapter: DatetimeAdapter<D>,
-    @Optional() @Inject(MTX_DATETIME_FORMATS) private _dateFormats: MtxDatetimeFormats,
-    cdr: ChangeDetectorRef
-  ) {}
+  private _calendar = inject<MtxCalendar<D>>(MtxCalendar);
+  _dateAdapter = inject<DatetimeAdapter<D>>(DatetimeAdapter, { optional: true });
+  private _dateFormats = inject<MtxDatetimeFormats>(MTX_DATETIME_FORMATS, { optional: true });
 
   get currentView(): MtxCalendarView {
     return this._calendar.currentView;

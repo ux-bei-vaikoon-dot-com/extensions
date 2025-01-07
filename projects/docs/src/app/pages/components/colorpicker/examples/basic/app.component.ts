@@ -9,7 +9,6 @@ import { ColorFormat, MtxColorpickerModule } from '@dcnx/mat-extensions/colorpic
   selector: 'color-picker-example',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  standalone: true,
   imports: [FormsModule, MatRadioModule, MatFormFieldModule, MatInputModule, MtxColorpickerModule],
 })
 export class AppComponent {

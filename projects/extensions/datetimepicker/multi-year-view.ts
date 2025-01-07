@@ -1,13 +1,25 @@
 import {
+  DOWN_ARROW,
+  END,
+  ENTER,
+  HOME,
+  LEFT_ARROW,
+  PAGE_DOWN,
+  PAGE_UP,
+  RIGHT_ARROW,
+  SPACE,
+  UP_ARROW,
+} from '@angular/cdk/keycodes';
+import {
   AfterContentInit,
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
-  Inject,
   Input,
-  Optional,
   Output,
+  ViewChild,
   ViewEncapsulation,
+  inject,
 } from '@angular/core';
 import {
   DatetimeAdapter,
@@ -15,9 +27,9 @@ import {
   MtxDatetimeFormats,
 } from '@dcnx/mat-extensions/core';
 import { MtxCalendarBody, MtxCalendarCell } from './calendar-body';
-import { mtxDatetimepickerAnimations } from './datetimepicker-animations';
 import { createMissingDateImplError } from './datetimepicker-errors';
 import { MtxDatetimepickerType } from './datetimepicker-types';
+import { Directionality } from '@angular/cdk/bidi';
 
 export const yearsPerPage = 24;
 
@@ -31,13 +43,15 @@ export const yearsPerRow = 4;
   selector: 'mtx-multi-year-view',
   templateUrl: 'multi-year-view.html',
   exportAs: 'mtxMultiYearView',
-  animations: [mtxDatetimepickerAnimations.slideCalendar],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [MtxCalendarBody],
 })
 export class MtxMultiYearView<D> implements AfterContentInit {
+  _adapter = inject<DatetimeAdapter<D>>(DatetimeAdapter, { optional: true })!;
+  private _dir = inject(Directionality, { optional: true });
+  private _dateFormats = inject<MtxDatetimeFormats>(MTX_DATETIME_FORMATS, { optional: true })!;
+
   @Input() type: MtxDatetimepickerType = 'date';
 
   /** A function used to filter which dates are selectable. */
@@ -48,6 +62,12 @@ export class MtxMultiYearView<D> implements AfterContentInit {
 
   /** Emits when any date is selected. */
   @Output() readonly _userSelection = new EventEmitter<void>();
+
+  /** Emits when any date is activated. */
+  @Output() readonly activeDateChange: EventEmitter<D> = new EventEmitter<D>();
+
+  /** The body of calendar table */
+  @ViewChild(MtxCalendarBody) _mtxCalendarBody!: MtxCalendarBody;
 
   /** Grid of calendar cells representing the years in the range. */
   _years!: MtxCalendarCell[][];
@@ -64,12 +84,10 @@ export class MtxMultiYearView<D> implements AfterContentInit {
    */
   _selectedYear!: number | null;
 
-  _calendarState!: string;
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
 
-  constructor(
-    @Optional() public _adapter: DatetimeAdapter<D>,
-    @Optional() @Inject(MTX_DATETIME_FORMATS) private _dateFormats: MtxDatetimeFormats
-  ) {
+  constructor() {
     if (!this._adapter) {
       throw createMissingDateImplError('DatetimeAdapter');
     }
@@ -107,14 +125,14 @@ export class MtxMultiYearView<D> implements AfterContentInit {
 
   /** The currently selected date. */
   @Input()
-  get selected(): D {
+  get selected(): D | null {
     return this._selected;
   }
-  set selected(value: D) {
+  set selected(value: D | null) {
     this._selected = value;
     this._selectedYear = this._selected && this._adapter.getYear(this._selected);
   }
-  private _selected!: D;
+  private _selected: D | null = null;
 
   /** The minimum selectable date. */
   @Input()
@@ -166,10 +184,6 @@ export class MtxMultiYearView<D> implements AfterContentInit {
 
   _getActiveCell(): number {
     return getActiveOffset(this._adapter, this.activeDate, this.minDate, this.maxDate);
-  }
-
-  _calendarStateDone() {
-    this._calendarState = '';
   }
 
   /** Initializes this year view. */
@@ -232,28 +246,83 @@ export class MtxMultiYearView<D> implements AfterContentInit {
   }
 
   /**
-   * Gets the year in this years range that the given Date falls on.
-   * Returns null if the given Date is not in this range.
-   */
-  private _getYearInCurrentRange(date: D) {
-    const year = this._adapter.getYear(date);
-    return this._isInRange(year) ? year : null;
-  }
-
-  /**
-   * Validate if the current year is in the current range
-   * Returns true if is in range else returns false
-   */
-  private _isInRange(year: number): boolean {
-    return true;
-  }
-
-  /**
    * @param obj The object to check.
    * @returns The given object if it is both a date instance and valid, otherwise null.
    */
-  private _getValidDateOrNull(obj: any): D | null {
+  _getValidDateOrNull(obj: any): D | null {
     return this._adapter.isDateInstance(obj) && this._adapter.isValid(obj) ? obj : null;
+  }
+
+  /** Handles keydown events on the calendar body when calendar is in multi-year view. */
+  _handleCalendarBodyKeydown(event: KeyboardEvent): void {
+    const oldActiveDate = this._activeDate;
+    const isRtl = this._isRtl();
+
+    switch (event.keyCode) {
+      case LEFT_ARROW:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, isRtl ? 1 : -1);
+        break;
+      case RIGHT_ARROW:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, isRtl ? -1 : 1);
+        break;
+      case UP_ARROW:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, -yearsPerRow);
+        break;
+      case DOWN_ARROW:
+        this.activeDate = this._adapter.addCalendarYears(this._activeDate, yearsPerRow);
+        break;
+      case HOME:
+        this.activeDate = this._adapter.addCalendarYears(
+          this._activeDate,
+          -getActiveOffset(this._adapter, this._activeDate, this.minDate, this.maxDate)
+        );
+        break;
+      case END:
+        this.activeDate = this._adapter.addCalendarYears(
+          this._activeDate,
+          yearsPerPage -
+            getActiveOffset(this._adapter, this._activeDate, this.minDate, this.maxDate) -
+            1
+        );
+        break;
+      case PAGE_UP:
+        this.activeDate = this._adapter.addCalendarYears(
+          this._activeDate,
+          event.altKey ? -yearsPerPage * 10 : -yearsPerPage
+        );
+        break;
+      case PAGE_DOWN:
+        this.activeDate = this._adapter.addCalendarYears(
+          this._activeDate,
+          event.altKey ? yearsPerPage * 10 : yearsPerPage
+        );
+        break;
+      case ENTER:
+      case SPACE:
+        this._yearSelected(this._adapter.getYear(this._activeDate));
+        break;
+      default:
+        // Don't prevent default or focus active cell on keys that we don't explicitly handle.
+        return;
+    }
+
+    if (this._adapter.compareDate(oldActiveDate, this.activeDate)) {
+      this.activeDateChange.emit(this.activeDate);
+    }
+
+    this._focusActiveCell();
+    // Prevent unexpected default actions such as form submission.
+    event.preventDefault();
+  }
+
+  /** Focuses the active cell after the microtask queue is empty. */
+  _focusActiveCell() {
+    this._mtxCalendarBody._focusActiveCell();
+  }
+
+  /** Determines whether the user has the RTL layout direction. */
+  private _isRtl() {
+    return this._dir && this._dir.value === 'rtl';
   }
 }
 

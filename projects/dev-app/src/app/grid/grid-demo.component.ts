@@ -1,6 +1,6 @@
 import { AsyncPipe, JsonPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
@@ -24,7 +24,6 @@ import { EXAMPLE_DATA, EXAMPLE_DATA2 } from './data';
   selector: 'dev-grid-demo',
   templateUrl: './grid-demo.component.html',
   styleUrl: './grid-demo.component.scss',
-  standalone: true,
   imports: [
     AsyncPipe,
     JsonPipe,
@@ -39,6 +38,9 @@ import { EXAMPLE_DATA, EXAMPLE_DATA2 } from './data';
   ],
 })
 export class GridDemoComponent implements OnInit, AfterViewInit {
+  private translate = inject(TranslateService);
+  private http = inject(HttpClient);
+
   @ViewChild('grid', { static: true }) grid!: MtxGrid;
   @ViewChild('grid2', { static: true }) grid2!: MtxGrid;
 
@@ -210,11 +212,6 @@ export class GridDemoComponent implements OnInit, AfterViewInit {
 
   // mat-table
   displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
-
-  constructor(
-    private translate: TranslateService,
-    private http: HttpClient
-  ) {}
 
   ngOnInit() {
     this.getRemoteData();

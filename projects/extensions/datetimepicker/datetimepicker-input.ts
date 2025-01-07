@@ -6,11 +6,10 @@ import {
   ElementRef,
   EventEmitter,
   forwardRef,
-  Inject,
   Input,
   OnDestroy,
-  Optional,
   Output,
+  inject,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -85,11 +84,15 @@ export class MtxDatetimepickerInputEvent<D> {
     '(keydown)': '_onKeydown($event)',
   },
   exportAs: 'mtxDatetimepickerInput',
-  standalone: true,
 })
 export class MtxDatetimepickerInput<D>
   implements AfterContentInit, ControlValueAccessor, OnDestroy, Validator
 {
+  private _elementRef = inject(ElementRef);
+  private _dateAdapter = inject<DatetimeAdapter<D>>(DatetimeAdapter, { optional: true })!;
+  private _dateFormats = inject<MtxDatetimeFormats>(MTX_DATETIME_FORMATS, { optional: true })!;
+  private _formField = inject(MatFormField, { optional: true });
+
   _datetimepicker!: MtxDatetimepicker<D>;
 
   _dateFilter!: (date: D | null, type: MtxDatetimepickerFilterType) => boolean;
@@ -113,12 +116,12 @@ export class MtxDatetimepickerInput<D>
   /** Whether the last value set on the input was valid. */
   private _lastValueValid = false;
 
-  constructor(
-    private _elementRef: ElementRef,
-    @Optional() public _dateAdapter: DatetimeAdapter<D>,
-    @Optional() @Inject(MTX_DATETIME_FORMATS) private _dateFormats: MtxDatetimeFormats,
-    @Optional() private _formField: MatFormField
-  ) {
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {
+    const _dateAdapter = this._dateAdapter;
+
     if (!this._dateAdapter) {
       throw createMissingDateImplError('DatetimeAdapter');
     }

@@ -5,18 +5,17 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  Inject,
   InjectionToken,
   Input,
   NgZone,
   OnDestroy,
-  Optional,
   Output,
   QueryList,
   Renderer2,
   ViewChildren,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import { ThemePalette } from '@angular/material/core';
 import { Observable, Subject, Subscriber } from 'rxjs';
@@ -88,9 +87,16 @@ export const MTX_SPLIT_DEFAULT_OPTIONS = new InjectionToken<MtxSplitDefaultOptio
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './split.scss',
   templateUrl: './split.html',
-  standalone: true,
 })
 export class MtxSplit implements AfterViewInit, OnDestroy {
+  private ngZone = inject(NgZone);
+  private elRef = inject(ElementRef);
+  private cdRef = inject(ChangeDetectorRef);
+  private renderer = inject(Renderer2);
+  protected _defaultOptions = inject<MtxSplitDefaultOptions>(MTX_SPLIT_DEFAULT_OPTIONS, {
+    optional: true,
+  });
+
   @Input() color: ThemePalette;
 
   /** The split direction. */
@@ -234,38 +240,34 @@ export class MtxSplit implements AfterViewInit, OnDestroy {
   }
   private transitionEndSubscriber!: Subscriber<MtxSplitOutputAreaSizes>;
 
-  private dragProgressSubject: Subject<MtxSplitOutputData> = new Subject();
+  private dragProgressSubject = new Subject<MtxSplitOutputData>();
   dragProgress$: Observable<MtxSplitOutputData> = this.dragProgressSubject.asObservable();
 
   private isDragging = false;
-  private dragListeners: Array<() => void> = [];
+  private dragListeners: (() => void)[] = [];
   private snapshot: MtxSplitSnapshot | null = null;
   private startPoint: MtxSplitPoint | null = null;
   private endPoint: MtxSplitPoint | null = null;
 
-  public readonly displayedAreas: Array<MtxSplitArea> = [];
-  private readonly hidedAreas: Array<MtxSplitArea> = [];
+  public readonly displayedAreas: MtxSplitArea[] = [];
+  private readonly hidedAreas: MtxSplitArea[] = [];
 
   @ViewChildren('gutterEls') private gutterEls!: QueryList<ElementRef>;
 
-  constructor(
-    private ngZone: NgZone,
-    private elRef: ElementRef,
-    private cdRef: ChangeDetectorRef,
-    private renderer: Renderer2,
-    @Optional()
-    @Inject(MTX_SPLIT_DEFAULT_OPTIONS)
-    protected _defaultOptions?: MtxSplitDefaultOptions
-  ) {
-    this.color = _defaultOptions?.color ?? 'primary';
-    this.direction = _defaultOptions?.direction ?? 'horizontal';
-    this.dir = _defaultOptions?.dir ?? 'ltr';
-    this.unit = _defaultOptions?.unit ?? 'percent';
-    this.gutterDblClickDuration = _defaultOptions?.gutterDblClickDuration ?? 0;
-    this.gutterSize = _defaultOptions?.gutterSize ?? 4;
-    this.gutterStep = _defaultOptions?.gutterStep ?? 1;
-    this.restrictMove = _defaultOptions?.restrictMove ?? false;
-    this.useTransition = _defaultOptions?.useTransition ?? false;
+  constructor() {
+    const _defaultOptions = this._defaultOptions;
+
+    if (_defaultOptions) {
+      this.color = _defaultOptions.color ?? 'primary';
+      this.direction = _defaultOptions.direction ?? 'horizontal';
+      this.dir = _defaultOptions.dir ?? 'ltr';
+      this.unit = _defaultOptions.unit ?? 'percent';
+      this.gutterDblClickDuration = _defaultOptions.gutterDblClickDuration ?? 0;
+      this.gutterSize = _defaultOptions.gutterSize ?? 4;
+      this.gutterStep = _defaultOptions.gutterStep ?? 1;
+      this.restrictMove = _defaultOptions.restrictMove ?? false;
+      this.useTransition = _defaultOptions.useTransition ?? false;
+    }
   }
 
   ngAfterViewInit() {

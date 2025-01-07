@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -8,8 +8,10 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { DateAdapter, ThemePalette } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { provideMomentDatetimeAdapter } from '@dcnx/mat-extensions-moment-adapter';
 import {
@@ -21,7 +23,6 @@ import * as _moment from 'moment';
 import { default as _rollupMoment } from 'moment';
 import { Subscription } from 'rxjs';
 import { CustomHeader } from './custom-header.component';
-import { MatInputModule } from '@angular/material/input';
 
 const moment = _rollupMoment || _moment;
 
@@ -29,7 +30,6 @@ const moment = _rollupMoment || _moment;
   selector: 'dev-datetimepicker-demo',
   templateUrl: 'datetimepicker-demo.component.html',
   styleUrl: 'datetimepicker-demo.component.scss',
-  standalone: true,
   imports: [
     MatRadioGroup,
     ReactiveFormsModule,
@@ -39,6 +39,7 @@ const moment = _rollupMoment || _moment;
     MatInputModule,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MtxDatetimepickerModule,
   ],
   providers: [
@@ -68,7 +69,12 @@ const moment = _rollupMoment || _moment;
   ],
 })
 export class DatetimepickerDemoComponent implements OnInit, OnDestroy {
+  private dateAdapter = inject<DateAdapter<any>>(DateAdapter);
+  private translate = inject(TranslateService);
+  private fb = inject(UntypedFormBuilder);
+
   themeColor: ThemePalette = 'primary';
+  timeInputAutoFocus = true;
 
   type = 'moment';
 
@@ -85,11 +91,7 @@ export class DatetimepickerDemoComponent implements OnInit, OnDestroy {
 
   translateSubscription!: Subscription;
 
-  constructor(
-    fb: UntypedFormBuilder,
-    private dateAdapter: DateAdapter<any>,
-    private translate: TranslateService
-  ) {
+  constructor() {
     this.today = moment.utc();
     this.tomorrow = moment.utc().date(moment.utc().date() + 1);
     this.yesterday = moment.utc().date(moment.utc().date() - 1);
@@ -110,13 +112,14 @@ export class DatetimepickerDemoComponent implements OnInit, OnDestroy {
       }
     };
 
-    this.group = fb.group({
+    this.group = this.fb.group({
       dateTime: [new Date('2017-11-09T12:10:00.000Z'), Validators.required],
       dateTimeManual: [new Date('2017-11-09T12:10:00.000Z'), Validators.required],
       dateTimeYear: [new Date('2017-11-09T12:10:00.000Z'), Validators.required],
       date: [null, Validators.required],
       time: [null, Validators.required],
       timeAMPM: [null, Validators.required],
+      timeAMPM2: [null, Validators.required],
       timeAMPMManual: [null, Validators.required],
       month: [null, Validators.required],
       year: [null, Validators.required],

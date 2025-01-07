@@ -7,13 +7,13 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  Inject,
   Input,
   OnChanges,
   OnDestroy,
   Output,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 
 import { DatetimeAdapter } from '@dcnx/mat-extensions/core';
@@ -29,6 +29,15 @@ export const CLOCK_TICK_RADIUS = 7.0833;
 
 /** Possible views for datetimepicker clock. */
 export type MtxClockView = 'hour' | 'minute';
+
+export interface ClockCell {
+  value: number;
+  displayValue: string;
+  enabled: boolean;
+  top: number;
+  left: number;
+  fontSize?: string;
+}
 
 /**
  * A clock that is used as part of the datetimepicker.
@@ -47,14 +56,20 @@ export type MtxClockView = 'hour' | 'minute';
   exportAs: 'mtxClock',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
 })
 export class MtxClock<D> implements AfterContentInit, OnDestroy, OnChanges {
+  private _elementRef = inject(ElementRef);
+  private _adapter = inject<DatetimeAdapter<D>>(DatetimeAdapter);
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+  private _document = inject(DOCUMENT);
+
   /** A function used to filter which dates are selectable. */
   @Input() dateFilter!: (date: D, type: MtxDatetimepickerFilterType) => boolean;
 
   /** Step over minutes. */
   @Input() interval: number = 1;
+
+  @Input() actionButtons: boolean = false;
 
   /** Whether the clock uses 12 hour format. */
   @Input({ transform: booleanAttribute }) twelvehour: boolean = false;
@@ -74,22 +89,15 @@ export class MtxClock<D> implements AfterContentInit, OnDestroy, OnChanges {
   /** Whether the clock is in hour view. */
   _hourView: boolean = true;
 
-  _hours: any[] = [];
+  _hours: ClockCell[] = [];
 
-  _minutes: any[] = [];
+  _minutes: ClockCell[] = [];
 
   _selectedHour!: number;
 
   _selectedMinute!: number;
 
   private _timeChanged = false;
-
-  constructor(
-    private _elementRef: ElementRef,
-    private _adapter: DatetimeAdapter<D>,
-    private _changeDetectorRef: ChangeDetectorRef,
-    @Inject(DOCUMENT) private _document: any
-  ) {}
 
   /**
    * The date to display in this clock view.
@@ -209,7 +217,7 @@ export class MtxClock<D> implements AfterContentInit, OnDestroy, OnChanges {
 
     if (this._timeChanged) {
       this.selectedChange.emit(this.activeDate);
-      if (!this._hourView) {
+      if (this.actionButtons || !this._hourView) {
         this._userSelection.emit();
       }
     }
@@ -249,7 +257,7 @@ export class MtxClock<D> implements AfterContentInit, OnDestroy, OnChanges {
     const hourNames = this._adapter.getHourNames();
     const minuteNames = this._adapter.getMinuteNames();
     if (this.twelvehour) {
-      const hours = [];
+      const hours: ClockCell[] = [];
       for (let i = 0; i < hourNames.length; i++) {
         const radian = (i / 6) * Math.PI;
         const radius = CLOCK_OUTER_RADIUS;

@@ -7,6 +7,7 @@ import {
   OnInit,
   Renderer2,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 
 import { MtxSplit } from './split';
@@ -15,9 +16,14 @@ import { getInputPositiveNumber } from './utils';
 @Directive({
   selector: 'mtx-split-pane, [mtx-split-pane]',
   exportAs: 'mtxSplitPane',
-  standalone: true,
 })
 export class MtxSplitPane implements OnInit, OnDestroy {
+  private ngZone = inject(NgZone);
+  private renderer = inject(Renderer2);
+  private split = inject(MtxSplit);
+
+  elRef = inject(ElementRef);
+
   /**
    * Order of the area. Used to maintain the order of areas when toggling their visibility.
    * Toggling area visibility without specifying an `order` leads to weird behavior.
@@ -105,14 +111,9 @@ export class MtxSplitPane implements OnInit, OnDestroy {
   private _visible = true;
 
   private transitionListener!: () => void;
-  private readonly lockListeners: Array<() => void> = [];
+  private readonly lockListeners: (() => void)[] = [];
 
-  constructor(
-    private ngZone: NgZone,
-    public elRef: ElementRef,
-    private renderer: Renderer2,
-    private split: MtxSplit
-  ) {
+  constructor() {
     this.renderer.addClass(this.elRef.nativeElement, 'mtx-split-pane');
   }
 
