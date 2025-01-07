@@ -12,9 +12,11 @@ import {
   OnDestroy,
   Output,
   QueryList,
+  TrackByFunction,
   ViewEncapsulation,
   booleanAttribute,
   forwardRef,
+  inject,
 } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatCheckbox, MatCheckboxChange } from '@angular/material/checkbox';
@@ -46,12 +48,34 @@ export class MtxCheckboxBase {
       multi: true,
     },
   ],
-  standalone: true,
   imports: [FormsModule, MatCheckbox, MtxToObservablePipe, AsyncPipe],
 })
 export class MtxCheckboxGroup implements AfterViewInit, OnDestroy, ControlValueAccessor {
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+  private _focusMonitor = inject(FocusMonitor);
+  private _elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  // TODO: support ng-content for checkbox-group
   @ContentChildren(forwardRef(() => MatCheckbox), { descendants: true })
   _checkboxes!: QueryList<MatCheckbox>;
+
+  /**
+   * Tracking function that will be used to check the differences in data changes. Used similarly
+   * to `ngFor` `trackBy` function. Optimize row operations by identifying a row based on its data
+   * relative to the function to know if a row should be added/removed/moved.
+   * Accepts a function that takes two parameters, `index` and `item`.
+   */
+  @Input()
+  get trackBy() {
+    return this._trackByFn;
+  }
+  set trackBy(fn: TrackByFunction<any> | undefined) {
+    if (fn != null && typeof fn !== 'function') {
+      console.warn(`trackBy must be a function, but received ${JSON.stringify(fn)}.`);
+    }
+    this._trackByFn = fn;
+  }
+  private _trackByFn?: TrackByFunction<any>;
 
   @Input()
   get items() {
@@ -99,12 +123,6 @@ export class MtxCheckboxGroup implements AfterViewInit, OnDestroy, ControlValueA
 
   _onChange: (value: MtxCheckboxGroupOption[]) => void = () => null;
   _onTouched: () => void = () => null;
-
-  constructor(
-    private _changeDetectorRef: ChangeDetectorRef,
-    private _focusMonitor: FocusMonitor,
-    private _elementRef: ElementRef<HTMLElement>
-  ) {}
 
   ngAfterViewInit() {
     this._focusMonitor.monitor(this._elementRef, true).subscribe(focusOrigin => {
@@ -254,4 +272,8 @@ export class MtxCheckboxGroup implements AfterViewInit, OnDestroy, ControlValueA
 
     this._getSelectedItems(index);
   }
+
+  _trackBy = (index: number, item: any) => {
+    return this.trackBy ? this.trackBy(index, item) : item;
+  };
 }

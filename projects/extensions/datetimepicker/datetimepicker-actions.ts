@@ -8,6 +8,7 @@ import {
   ViewChild,
   ViewContainerRef,
   ViewEncapsulation,
+  inject,
 } from '@angular/core';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { MtxDatetimepicker } from './datetimepicker';
@@ -15,28 +16,40 @@ import { MtxDatetimepicker } from './datetimepicker';
 @Directive({
   selector: '[mtxDatetimepickerApply]',
   host: { '(click)': '_datetimepicker._selectManually()' },
-  standalone: true,
 })
 export class MtxDatetimepickerApply<D> {
-  constructor(public _datetimepicker: MtxDatetimepicker<D>) {}
+  _datetimepicker = inject<MtxDatetimepicker<D>>(MtxDatetimepicker);
+
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {}
 }
 
 @Directive({
   selector: '[mtxDatetimepickerCancel]',
   host: { '(click)': '_datetimepicker.close()' },
-  standalone: true,
 })
 export class MtxDatetimepickerCancel<D> {
-  constructor(public _datetimepicker: MtxDatetimepicker<D>) {}
+  _datetimepicker = inject<MtxDatetimepicker<D>>(MtxDatetimepicker);
+
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {}
 }
 
 @Directive({
   selector: '[mtxDatetimepickerClear]',
   host: { '(click)': '_datetimepicker._clearSelected()' },
-  standalone: true,
 })
 export class MtxDatetimepickerClear<D> {
-  constructor(public _datetimepicker: MtxDatetimepicker<D>) {}
+  _datetimepicker = inject<MtxDatetimepicker<D>>(MtxDatetimepicker);
+
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {}
 }
 
 @Component({
@@ -51,15 +64,18 @@ export class MtxDatetimepickerClear<D> {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  standalone: true,
 })
 export class MtxDatetimepickerActions<D> implements AfterViewInit, OnDestroy {
+  private _datetimepicker = inject<MtxDatetimepicker<D>>(MtxDatetimepicker);
+  private _viewContainerRef = inject(ViewContainerRef);
+
   @ViewChild(TemplateRef) _template!: TemplateRef<unknown>;
   private _portal!: TemplatePortal;
-  constructor(
-    private _datetimepicker: MtxDatetimepicker<D>,
-    private _viewContainerRef: ViewContainerRef
-  ) {}
+
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {}
 
   ngAfterViewInit() {
     this._portal = new TemplatePortal(this._template, this._viewContainerRef);

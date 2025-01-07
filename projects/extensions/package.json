@@ -1,8 +1,12 @@
 {
   "name": "@dcnx/mat-extensions",
-  "version": "18.2.0",
+  "version": "19.0.1",
   "description": "Angular Material Extensions",
-
+  "author": "Vaikoon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ng-matero/extensions.git"
+  },
   "keywords": [
     "angular",
     "angular-material",
@@ -56,17 +60,20 @@
     }
   },
   "dependencies": {
-    "@ng-select/ng-select": "^13.7.0",
+    "@ng-select/ng-select": "^14.1.0",
     "ngx-color": "^9.0.0",
     "photoviewer": "^3.10.0",
     "tslib": "^2.4.0"
   },
   "peerDependencies": {
-    "@angular/animations": ">=18.2.0",
-    "@angular/cdk": ">=18.2.0",
-    "@angular/common": ">=18.2.0",
-    "@angular/core": ">=18.2.0",
-    "@angular/material": ">=18.2.0"
+    "@angular/animations": ">=19.0.0",
+    "@angular/cdk": ">=19.0.0",
+    "@angular/common": ">=19.0.0",
+    "@angular/core": ">=19.0.0",
+    "@angular/material": ">=19.0.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://gitlab.com/api/v4/projects/62730181/packages/npm/"
+  }
 }

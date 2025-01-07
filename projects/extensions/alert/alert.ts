@@ -8,6 +8,7 @@ import {
   Output,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 
@@ -25,10 +26,11 @@ export type MtxAlertType = 'default' | 'info' | 'success' | 'warning' | 'danger'
   styleUrl: './alert.scss',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [MatIconButton],
 })
 export class MtxAlert {
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+
   @HostBinding('class')
   get _hostClassList() {
     return `mtx-alert-${this.type} mat-elevation-z${this.elevation}`;
@@ -45,8 +47,6 @@ export class MtxAlert {
 
   /** Event emitted when the alert closed. */
   @Output() closed = new EventEmitter<MtxAlert>();
-
-  constructor(private _changeDetectorRef: ChangeDetectorRef) {}
 
   _onClosed(): void {
     this._changeDetectorRef.markForCheck();

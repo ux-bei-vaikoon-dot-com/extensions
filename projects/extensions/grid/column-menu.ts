@@ -32,7 +32,6 @@ import {
   styleUrl: './column-menu.scss',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [
     AsyncPipe,
     NgTemplateOutlet,
@@ -52,7 +51,7 @@ import {
   ],
 })
 export class MtxGridColumnMenu {
-  @ViewChild('menu', { static: true }) menuPanel!: MatMenu;
+  @ViewChild(MatMenu, { static: true }) menuPanel!: MatMenu;
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
 
   @Input() columns: MtxGridColumn[] = [];

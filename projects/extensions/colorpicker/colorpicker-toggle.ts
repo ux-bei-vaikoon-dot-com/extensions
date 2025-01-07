@@ -1,11 +1,11 @@
 import {
   AfterContentInit,
-  Attribute,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ContentChild,
   Directive,
+  HostAttributeToken,
   Input,
   OnChanges,
   OnDestroy,
@@ -13,6 +13,7 @@ import {
   ViewChild,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { Observable, Subscription, merge, of as observableOf } from 'rxjs';
@@ -22,7 +23,6 @@ import { MtxColorpicker } from './colorpicker';
 /** Can be used to override the icon of a `mtxColorpickerToggle`. */
 @Directive({
   selector: '[mtxColorpickerToggleIcon]',
-  standalone: true,
 })
 export class MtxColorpickerToggleIcon {}
 
@@ -44,10 +44,11 @@ export class MtxColorpickerToggleIcon {}
   exportAs: 'mtxColorpickerToggle',
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [MatIconButton],
 })
 export class MtxColorpickerToggle implements AfterContentInit, OnChanges, OnDestroy {
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+
   private _stateChanges = Subscription.EMPTY;
 
   /** Colorpicker instance that the button will toggle. */
@@ -82,10 +83,9 @@ export class MtxColorpickerToggle implements AfterContentInit, OnChanges, OnDest
   /** Underlying button element. */
   @ViewChild('button') _button!: MatButton;
 
-  constructor(
-    private _changeDetectorRef: ChangeDetectorRef,
-    @Attribute('tabindex') defaultTabIndex: string
-  ) {
+  constructor() {
+    const defaultTabIndex = inject(new HostAttributeToken('tabindex'), { optional: true });
+
     const parsedTabIndex = Number(defaultTabIndex);
     this.tabIndex = parsedTabIndex || parsedTabIndex === 0 ? parsedTabIndex : null;
   }

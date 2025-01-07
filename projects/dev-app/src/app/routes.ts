@@ -37,11 +37,6 @@ export const DEV_APP_ROUTES: Routes = [
       ),
   },
   {
-    path: 'timepicker',
-    loadComponent: () =>
-      import('./timepicker/timepicker-demo.component').then(m => m.TimepickerDemoComponent),
-  },
-  {
     path: 'dialog',
     loadComponent: () => import('./dialog/dialog-demo.component').then(m => m.DialogDemoComponent),
   },

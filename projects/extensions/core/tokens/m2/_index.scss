@@ -13,6 +13,7 @@
 @use './mtx/split' as tokens-mtx-split;
 @use './mtx/highlight-box' as tokens-mtx-highlight-box;
 @use './mtx/file-upload' as tokens-mtx-file-upload;
+@use './mdc/plain-tooltip' as tokens-mdc-plain-tooltip;
 
 /// Gets the tokens for the given theme, m2 tokens module, and theming system.
 /// @param {Map} $theme The Angular Material theme object to generate token values from.
@@ -67,6 +68,7 @@
     _get-tokens-for-module($theme, tokens-mtx-progress),
     _get-tokens-for-module($theme, tokens-mtx-select),
     _get-tokens-for-module($theme, tokens-mtx-split),
+    _get-tokens-for-module($theme, tokens-mdc-plain-tooltip),
     _get-tokens-for-module($theme, tokens-mtx-highlight-box),
     _get-tokens-for-module($theme, tokens-mtx-file-upload),
   );

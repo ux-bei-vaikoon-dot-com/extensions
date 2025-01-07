@@ -1,8 +1,7 @@
 import { coerceNumberProperty, NumberInput } from '@angular/cdk/coercion';
-import { DOWN_ARROW, UP_ARROW } from '@angular/cdk/keycodes';
+import { DOWN_ARROW, ENTER, SPACE, UP_ARROW } from '@angular/cdk/keycodes';
 import { TemplatePortal } from '@angular/cdk/portal';
 import {
-  AfterViewInit,
   booleanAttribute,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -10,6 +9,7 @@ import {
   Directive,
   ElementRef,
   EventEmitter,
+  inject,
   Input,
   OnChanges,
   OnDestroy,
@@ -20,7 +20,6 @@ import {
 } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { SubscriptionLike } from 'rxjs';
-
 import { DatetimeAdapter } from '@dcnx/mat-extensions/core';
 import { MtxClock, MtxClockView } from './clock';
 import { MtxDatetimepickerFilterType } from './datetimepicker-filtertype';
@@ -40,9 +39,11 @@ function pad(num: NumberInput, size: number) {
     '(focus)': 'focus($event)',
   },
   exportAs: 'mtxTimeInput',
-  standalone: true,
 })
 export class MtxTimeInput implements OnDestroy {
+  private element = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
+
   @Input('timeInterval')
   set timeInterval(value: NumberInput) {
     this._interval = coerceNumberProperty(value);
@@ -78,10 +79,10 @@ export class MtxTimeInput implements OnDestroy {
   private keyPressListener = this.keyPressHandler.bind(this);
   private inputEventListener = this.inputChangedHandler.bind(this);
 
-  constructor(
-    private element: ElementRef,
-    private cdr: ChangeDetectorRef
-  ) {
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {
     this.inputElement.addEventListener('keydown', this.keyDownListener, {
       passive: true,
     });
@@ -222,19 +223,25 @@ export class MtxTimeInput implements OnDestroy {
 }
 
 @Component({
-  selector: 'mtx-time',
-  templateUrl: 'time.html',
-  styleUrl: 'time.scss',
+  selector: 'mtx-time-view',
+  templateUrl: 'time-view.html',
+  styleUrl: 'time-view.scss',
   exportAs: 'mtxTime',
   host: {
-    class: 'mtx-time',
+    'class': 'mtx-time-view',
+    'tabindex': '0',
+    '(keydown)': '_handleCalendarBodyKeydown($event)',
   },
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [MatButton, MtxClock, MtxTimeInput],
 })
-export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
+export class MtxTimeView<D> implements OnChanges, OnDestroy {
+  private _adapter = inject<DatetimeAdapter<D>>(DatetimeAdapter);
+  private _changeDetectorRef = inject(ChangeDetectorRef);
+  private _elementRef = inject(ElementRef);
+  protected _datetimepickerIntl = inject(MtxDatetimepickerIntl);
+
   /** Emits when the currently selected date changes. */
   @Output() readonly selectedChange = new EventEmitter<D>();
 
@@ -253,11 +260,20 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
   /** A function used to filter which dates are selectable. */
   @Input() dateFilter!: (date: D, type: MtxDatetimepickerFilterType) => boolean;
 
+  /** Input for action buttons. */
+  @Input({ transform: booleanAttribute }) timeInput = false;
+
   /** Step over minutes. */
-  @Input() interval: number = 1;
+  @Input() interval = 1;
 
   /** Input for action buttons. */
   @Input() actionsPortal: TemplatePortal | null = null;
+
+  /** Prevent user to select same date time */
+  @Input({ transform: booleanAttribute }) preventSameDateTimeSelection = false;
+
+  /** Whether the time input should be auto-focused after view init. */
+  @Input({ transform: booleanAttribute }) autoFocus = true;
 
   @ViewChild('hourInput', { read: ElementRef<HTMLInputElement> })
   protected hourInputElement: ElementRef<HTMLInputElement> | undefined;
@@ -279,9 +295,7 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
   /** Whether the time is now in AM or PM. */
   @Input() AMPM: MtxAMPM = 'AM';
 
-  /**
-   * The date to display in this clock view.
-   */
+  /** The date to display in this clock view. */
   @Input()
   get activeDate(): D {
     return this._activeDate;
@@ -309,7 +323,6 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
   get minDate(): D | null {
     return this._minDate;
   }
-
   set minDate(value: D | null) {
     this._minDate = this._adapter.getValidDateOrNull(this._adapter.deserialize(value));
   }
@@ -381,11 +394,10 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
     return String(value);
   }
 
-  constructor(
-    private _adapter: DatetimeAdapter<D>,
-    private _changeDetectorRef: ChangeDetectorRef,
-    protected _datetimepickerIntl: MtxDatetimepickerIntl
-  ) {
+  /** Inserted by Angular inject() migration for backwards compatibility */
+  constructor(...args: unknown[]);
+
+  constructor() {
     this.datetimepickerIntlChangesSubscription = this._datetimepickerIntl.changes.subscribe(() => {
       this._changeDetectorRef.detectChanges();
     });
@@ -394,14 +406,10 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     // when clockView changes by input we should focus the correct input
     if (changes.clockView) {
-      if (changes.clockView.currentValue !== changes.clockView.previousValue) {
-        this.focusInputElement();
+      if (changes.clockView.currentValue !== changes.clockView.previousValue && this.autoFocus) {
+        this._focusInputElement();
       }
     }
-  }
-
-  ngAfterViewInit(): void {
-    this.focusInputElement();
   }
 
   ngOnDestroy(): void {
@@ -410,15 +418,51 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
     }
   }
 
-  focusInputElement() {
+  /** Handles keydown events on the calendar body when calendar is in clock view. */
+  _handleCalendarBodyKeydown(event: KeyboardEvent): void {
+    const oldActiveDate = this._activeDate;
+
+    switch (event.keyCode) {
+      case UP_ARROW:
+        this.selected =
+          this._clockView === 'hour'
+            ? this._adapter.addCalendarHours(this._activeDate, 1)
+            : this._adapter.addCalendarMinutes(this._activeDate, this.interval);
+        break;
+      case DOWN_ARROW:
+        this.selected =
+          this._clockView === 'hour'
+            ? this._adapter.addCalendarHours(this._activeDate, -1)
+            : this._adapter.addCalendarMinutes(this._activeDate, -this.interval);
+        break;
+      case ENTER:
+      case SPACE:
+        if (this.timeInput && event.keyCode == SPACE) {
+          return;
+        }
+        if (this.clockView == 'hour') {
+          this._timeSelected(this._activeDate);
+          this._focusInputElement();
+        } else {
+          this._userSelection.emit();
+        }
+        return;
+      default:
+        // Don't prevent default or focus active cell on keys that we don't explicitly handle.
+        return;
+    }
+
+    this.selectedChange.emit(this.selected);
+
+    // Prevent unexpected default actions such as form submission.
+    event.preventDefault();
+  }
+
+  _focusInputElement() {
     if (this.clockView === 'hour') {
-      if (this.hourInputElement) {
-        this.hourInputElement.nativeElement.focus();
-      }
+      this.hourInputElement?.nativeElement.focus();
     } else {
-      if (this.minuteInputElement) {
-        this.minuteInputElement.nativeElement.focus();
-      }
+      this.minuteInputElement?.nativeElement.focus();
     }
   }
 
@@ -435,6 +479,10 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
 
       this._activeDate = this._adapter.clampDate(newValue, this.minDate, this.maxDate);
       this.activeDateChange.emit(this.activeDate);
+
+      if (this.actionsPortal) {
+        this.selectedChange.emit(this.activeDate);
+      }
 
       // If previously we did set [mtxValue]="13" and the input changed to 6, and the clamping
       // will make it "13" again then the hourInputDirective will not have been updated
@@ -483,6 +531,10 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
       this._activeDate = this._adapter.clampDate(newValue, this.minDate, this.maxDate);
       this.activeDateChange.emit(this.activeDate);
 
+      if (this.actionsPortal) {
+        this.selectedChange.emit(this.activeDate);
+      }
+
       // If previously we did set [mtxValue]="40" and the input changed to 30, and the clamping
       // will make it "40" again then the minuteInputDirective will not have been updated
       // since "40" === "40" same reference so no change detected by directly setting it within
@@ -498,11 +550,26 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
     this.clockViewChange.emit(clockView);
   }
 
-  _timeSelected(date: D): void {
+  _dialTimeSelected(date: D): void {
     if (this.clockView === 'hour') {
       this.clockView = 'minute';
+      this._activeDate = date;
     }
-    this._activeDate = this.selected = date;
+    if (!this._adapter.sameDatetime(date, this.selected) || !this.preventSameDateTimeSelection) {
+      this.selectedChange.emit(date);
+    }
+  }
+
+  _timeSelected(date: D): void {
+    if (this.timeInput) {
+      if (this.clockView === 'hour') {
+        this.clockView = 'minute';
+      }
+      this._activeDate = this.selected = date;
+    } else {
+      this._dialTimeSelected(date);
+    }
+    this.clockViewChange.emit(this.clockView);
   }
 
   _onActiveDateChange(date: D) {
@@ -511,8 +578,12 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   _handleSelection() {
-    if (this.actionsPortal && this._selected) {
-      this.selectedChange.emit(this._selected);
+    if (this.timeInput) {
+      if (this.actionsPortal && this._selected) {
+        this.selectedChange.emit(this._selected);
+      }
+    } else {
+      this._userSelection.emit();
     }
   }
 
@@ -525,5 +596,16 @@ export class MtxTime<D> implements OnChanges, AfterViewInit, OnDestroy {
 
   _handleCancel() {
     this._userSelection.emit();
+  }
+
+  /** Focuses the active cell after the microtask queue is empty. */
+  _focusActiveCell() {
+    if (this.timeInput) {
+      if (this.autoFocus) {
+        this._focusInputElement();
+      }
+    } else {
+      this._elementRef.nativeElement.focus();
+    }
   }
 }

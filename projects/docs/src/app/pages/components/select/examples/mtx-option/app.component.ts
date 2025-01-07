@@ -9,7 +9,6 @@ import { MtxSelectModule } from '@dcnx/mat-extensions/select';
   selector: 'select-example',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  standalone: true,
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, JsonPipe, MtxSelectModule],
 })
 export class AppComponent {

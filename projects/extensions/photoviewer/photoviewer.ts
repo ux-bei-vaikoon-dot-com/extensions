@@ -6,15 +6,17 @@ import {
   OnDestroy,
   OnInit,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import PhotoViewer from 'photoviewer';
 
 @Directive({
   selector: '[mtxPhotoviewer]',
   exportAs: 'mtxPhotoviewer',
-  standalone: true,
 })
 export class MtxPhotoviewer implements OnInit, OnDestroy {
+  private _elementRef = inject<ElementRef<Element>>(ElementRef);
+
   @Input('mtxPhotoviewerItems')
   images: PhotoViewer.Img[] = [];
 
@@ -25,8 +27,6 @@ export class MtxPhotoviewer implements OnInit, OnDestroy {
   embed = false;
 
   photoviewerInstance?: PhotoViewer;
-
-  constructor(private _elementRef: ElementRef<Element>) {}
 
   ngOnInit(): void {
     const { nativeElement } = this._elementRef;

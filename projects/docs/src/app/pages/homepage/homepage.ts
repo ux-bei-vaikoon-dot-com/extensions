@@ -1,4 +1,4 @@
-import { Component, HostBinding, OnInit } from '@angular/core';
+import { Component, HostBinding, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 
@@ -10,13 +10,12 @@ import { ComponentPageTitle } from '../page-title/page-title';
   selector: 'app-homepage',
   templateUrl: './homepage.html',
   styleUrl: './homepage.scss',
-  standalone: true,
   imports: [NavigationFocus, MatButtonModule, RouterLink, AppLogo],
 })
 export class Homepage implements OnInit {
-  @HostBinding('class.main-content') readonly mainContentClass = true;
+  private _componentPageTitle = inject(ComponentPageTitle);
 
-  constructor(public _componentPageTitle: ComponentPageTitle) {}
+  @HostBinding('class.main-content') readonly mainContentClass = true;
 
   ngOnInit(): void {
     this._componentPageTitle.title = '';

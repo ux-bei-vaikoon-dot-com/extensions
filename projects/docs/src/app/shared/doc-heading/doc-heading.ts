@@ -6,11 +6,10 @@ import { HeaderLinkComponent } from './header-link';
   template: `
     <h3 [id]="id">
       <header-link [example]="text"></header-link>
-      <span> {{ text }}</span>
+      <span>{{ text }}</span>
     </h3>
   `,
   encapsulation: ViewEncapsulation.None,
-  standalone: true,
   imports: [HeaderLinkComponent],
 })
 export class DocHeadingComponent implements OnInit {

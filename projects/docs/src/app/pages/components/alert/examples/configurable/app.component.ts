@@ -9,7 +9,6 @@ import { MtxAlertModule, MtxAlertType } from '@dcnx/mat-extensions/alert';
   selector: 'alert-example',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  standalone: true,
   imports: [FormsModule, MatRadioModule, MatCheckboxModule, MatSliderModule, MtxAlertModule],
 })
 export class AppComponent {

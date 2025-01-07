@@ -5,7 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { NgProgressModule } from 'ngx-progressbar';
+import { NgProgressbar } from 'ngx-progressbar';
+import { NgProgressRouter } from 'ngx-progressbar/router';
 import { map } from 'rxjs';
 import { AppLogo } from '../logo/logo';
 import { NavigationFocusService } from '../navigation-focus/navigation-focus.service';
@@ -15,9 +16,9 @@ import { AppThemes } from '../themes';
   selector: 'app-navbar',
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss',
-  standalone: true,
   imports: [
-    NgProgressModule,
+    NgProgressbar,
+    NgProgressRouter,
     RouterLink,
     RouterLinkActive,
     MatButtonModule,
@@ -29,6 +30,9 @@ import { AppThemes } from '../themes';
   ],
 })
 export class Navbar implements OnInit {
+  private _appThemes = inject(AppThemes);
+  private navigationFocusService = inject(NavigationFocusService);
+
   private readonly http = inject(HttpClient);
 
   dark = false;
@@ -37,10 +41,7 @@ export class Navbar implements OnInit {
 
   version$: any;
 
-  constructor(
-    private _appThemes: AppThemes,
-    private navigationFocusService: NavigationFocusService
-  ) {
+  constructor() {
     setTimeout(() => (this.skipLinkHref = this.navigationFocusService.getSkipLinkHref()), 100);
   }
 

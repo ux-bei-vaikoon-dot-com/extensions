@@ -1,5 +1,5 @@
 import { FocusMonitor } from '@angular/cdk/a11y';
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -10,19 +10,17 @@ import {
   DoCheck,
   ElementRef,
   EventEmitter,
-  Inject,
   InjectionToken,
   Input,
   OnDestroy,
   OnInit,
-  Optional,
   Output,
   QueryList,
-  Self,
   TemplateRef,
   ViewChild,
   ViewEncapsulation,
   booleanAttribute,
+  inject,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -36,9 +34,10 @@ import {
 import { ErrorStateMatcher, _ErrorStateTracker } from '@angular/material/core';
 import { MAT_FORM_FIELD, MatFormField, MatFormFieldControl } from '@angular/material/form-field';
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
-import { Subject, merge } from 'rxjs';
+import { Subject, Subscription, merge } from 'rxjs';
 import { startWith, takeUntil } from 'rxjs/operators';
 import { MtxOption } from './option';
+import { MtxSelectIntl } from './select-intl';
 import {
   MtxSelectFooterTemplate,
   MtxSelectHeaderTemplate,
@@ -80,6 +79,9 @@ export interface MtxSelectDefaultOptions {
   bindLabel?: string;
   openOnEnter?: boolean;
   clearSearchOnAdd?: boolean;
+  virtualScroll?: boolean;
+  fixedPlaceholder?: boolean;
+  deselectOnClick?: boolean;
 }
 
 /** Injection token that can be used to specify default select options. */
@@ -116,7 +118,6 @@ let nextUniqueId = 0;
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: MatFormFieldControl, useExisting: MtxSelect }],
-  standalone: true,
   imports: [NgSelectModule, FormsModule, NgTemplateOutlet],
 })
 export class MtxSelect
@@ -128,6 +129,17 @@ export class MtxSelect
     ControlValueAccessor,
     MatFormFieldControl<any>
 {
+  protected _intl = inject(MtxSelectIntl);
+  protected _changeDetectorRef = inject(ChangeDetectorRef);
+  protected _elementRef = inject(ElementRef);
+  protected _focusMonitor = inject(FocusMonitor);
+  ngControl = inject(NgControl, { optional: true, self: true });
+  protected _parentFormField? = inject<MatFormField>(MAT_FORM_FIELD, { optional: true });
+  protected _defaultOptions? = inject<MtxSelectDefaultOptions>(MTX_SELECT_DEFAULT_OPTIONS, {
+    optional: true,
+  });
+  private _document = inject(DOCUMENT);
+
   @ViewChild('ngSelect', { static: true }) ngSelect!: NgSelectComponent;
 
   @ContentChild(MtxSelectOptionTemplate, { read: TemplateRef })
@@ -159,13 +171,13 @@ export class MtxSelect
   mtxOptions!: QueryList<MtxOption>;
 
   @Input() addTag: boolean | AddTagFn = false;
-  @Input() addTagText = this._defaultOptions?.addTagText ?? 'Add item';
+  @Input() addTagText?: string;
   @Input() appearance = 'underline';
   @Input() appendTo = this._defaultOptions?.appendTo ?? 'body';
   @Input() bindLabel = this._defaultOptions?.bindLabel;
   @Input() bindValue = this._defaultOptions?.bindValue;
   @Input({ transform: booleanAttribute }) closeOnSelect = true;
-  @Input() clearAllText = this._defaultOptions?.clearAllText ?? 'Clear all';
+  @Input() clearAllText?: string;
   @Input({ transform: booleanAttribute }) clearable = true;
   @Input({ transform: booleanAttribute }) clearOnBackspace = true;
   @Input() compareWith!: CompareWithFn;
@@ -177,12 +189,12 @@ export class MtxSelect
   @Input({ transform: booleanAttribute }) selectableGroupAsModel = true;
   @Input({ transform: booleanAttribute }) hideSelected = false;
   @Input({ transform: booleanAttribute }) loading = false;
-  @Input() loadingText = this._defaultOptions?.loadingText ?? 'Loading...';
+  @Input() loadingText?: string;
   @Input() labelForId: string | null = null;
   @Input({ transform: booleanAttribute }) markFirst = true;
   @Input() maxSelectedItems!: number;
   @Input({ transform: booleanAttribute }) multiple = false;
-  @Input() notFoundText = this._defaultOptions?.notFoundText ?? 'No items found';
+  @Input() notFoundText?: string;
   @Input({ transform: booleanAttribute }) searchable = true;
   @Input({ transform: booleanAttribute }) readonly = false;
   @Input() searchFn: SearchFn | null = null;
@@ -195,10 +207,15 @@ export class MtxSelect
   @Input() minTermLength = 0;
   @Input({ transform: booleanAttribute }) editableSearchTerm = false;
   @Input() keyDownFn = (_: KeyboardEvent) => true;
-  @Input({ transform: booleanAttribute }) virtualScroll = false;
-  @Input() typeToSearchText = this._defaultOptions?.typeToSearchText ?? 'Type to search';
+  @Input({ transform: booleanAttribute }) virtualScroll =
+    this._defaultOptions?.virtualScroll ?? false;
+  @Input() typeToSearchText?: string;
   @Input() typeahead!: Subject<string>;
   @Input() isOpen?: boolean;
+  @Input({ transform: booleanAttribute }) fixedPlaceholder =
+    this._defaultOptions?.fixedPlaceholder ?? false;
+  @Input({ transform: booleanAttribute }) deselectOnClick =
+    this._defaultOptions?.deselectOnClick ?? false;
 
   @Output('blur') blurEvent = new EventEmitter();
   @Output('focus') focusEvent = new EventEmitter();
@@ -275,7 +292,7 @@ export class MtxSelect
     this._placeholder = value;
     this.stateChanges.next();
   }
-  private _placeholder = this._defaultOptions?.placeholder;
+  private _placeholder!: string;
 
   /** Whether the select is focused. */
   get focused(): boolean {
@@ -363,19 +380,19 @@ export class MtxSelect
     this._errorStateTracker.errorState = value;
   }
 
-  constructor(
-    protected _changeDetectorRef: ChangeDetectorRef,
-    protected _elementRef: ElementRef,
-    protected _focusMonitor: FocusMonitor,
-    defaultErrorStateMatcher: ErrorStateMatcher,
-    @Optional() parentForm: NgForm,
-    @Optional() parentFormGroup: FormGroupDirective,
-    @Optional() @Self() public ngControl: NgControl,
-    @Optional() @Inject(MAT_FORM_FIELD) protected _parentFormField?: MatFormField,
-    @Optional()
-    @Inject(MTX_SELECT_DEFAULT_OPTIONS)
-    protected _defaultOptions?: MtxSelectDefaultOptions
-  ) {
+  private _intlChangesSubscription = Subscription.EMPTY;
+
+  constructor() {
+    const _focusMonitor = this._focusMonitor;
+    const defaultErrorStateMatcher = inject(ErrorStateMatcher);
+    const parentForm = inject(NgForm, { optional: true });
+    const parentFormGroup = inject(FormGroupDirective, { optional: true });
+    const ngControl = this.ngControl;
+
+    this._intlChangesSubscription = this._intl.changes.subscribe(() => {
+      this._changeDetectorRef.detectChanges();
+    });
+
     _focusMonitor.monitor(this._elementRef, true).subscribe(origin => {
       if (this._focused && !origin) {
         this._onTouched();
@@ -413,13 +430,14 @@ export class MtxSelect
 
   ngAfterViewInit() {
     if (!this._itemsAreUsed) {
+      this.ngSelect.escapeHTML = false;
       this._setItemsFromMtxOptions();
     }
   }
 
   ngDoCheck(): void {
-    const ngControl = this.ngControl;
     if (this.ngControl) {
+      const ngControl = this.ngControl;
       // The disabled state might go out of sync if the form group is swapped out. See #17860.
       if (this._previousControl !== ngControl.control) {
         if (
@@ -442,6 +460,7 @@ export class MtxSelect
     this._destroy$.complete();
     this.stateChanges.complete();
     this._focusMonitor.stopMonitoring(this._elementRef);
+    this._intlChangesSubscription.unsubscribe();
   }
 
   /** Gets the value for the `aria-labelledby` attribute of the inputs. */
@@ -524,7 +543,6 @@ export class MtxSelect
   }
 
   /** Assigns a specific value to the select. Returns whether the value has changed. */
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private _assignValue(newValue: any | any[]): boolean {
     // Always re-assign an array, because it might have been mutated.
     if (newValue !== this._value || (this.multiple && Array.isArray(newValue))) {
@@ -591,8 +609,8 @@ export class MtxSelect
 
     // TODO: The ng-select has no `panelClass` prop, so we can add the theme color by the following way.
     setTimeout(() => {
-      const dropdownEl = document.getElementById(this.ngSelect.dropdownId) as HTMLElement;
-      dropdownEl.classList.add('mat-' + this._parentFormField?.color);
+      const dropdownEl = this._document.getElementById(this.ngSelect.dropdownId);
+      dropdownEl?.classList.add('mat-' + this._parentFormField?.color);
     });
   }
 }
