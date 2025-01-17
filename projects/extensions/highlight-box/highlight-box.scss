@@ -1,8 +1,6 @@
 @use '../core/tokens/token-utils';
 @use '../core/tokens/m2/mtx/highlight-box' as tokens-mtx-highlight-box;
 
-$_tokens: tokens-mtx-highlight-box.$prefix, tokens-mtx-highlight-box.get-token-slots();
-
 .mtx-highlight-box {
   > div {
     border-left-style: solid;

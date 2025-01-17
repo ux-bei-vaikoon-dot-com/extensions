@@ -1,8 +1,6 @@
 @use '../core/tokens/token-utils';
 @use '../core/tokens/m2/mtx/file-upload' as tokens-mtx-file-upload;
 
-$_tokens: tokens-mtx-file-upload.$prefix, tokens-mtx-file-upload.get-token-slots();
-
 .mtx-file-upload {
   @include token-utils.use-tokens(tokens-mtx-file-upload.$prefix, tokens-mtx-file-upload.get-token-slots()) {
     $padding: token-utils.get-token-variable(container-vertical-padding);
