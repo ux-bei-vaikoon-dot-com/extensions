@@ -1,9 +1,8 @@
 @use '../core/tokens/token-utils';
 @use '../core/tokens/m2/mtx/highlight-box' as tokens-mtx-highlight-box;
-$_tokens: tokens-mtx-highlight-box.$prefix, tokens-mtx-highlight-box.get-token-slots();
 
 .mtx-highlight-box {
-  div {
+  > div {
     border-left-style: solid;
     @include token-utils.use-tokens(tokens-mtx-highlight-box.$prefix, tokens-mtx-highlight-box.get-token-slots()) {
       $height: token-utils.get-token-variable(container-height);
@@ -16,7 +15,7 @@ $_tokens: tokens-mtx-highlight-box.$prefix, tokens-mtx-highlight-box.get-token-s
 
       padding-top: $padding;
       padding-bottom: $padding;
-      //min-height: #{$height};
+
       .mat-icon {
         @include token-utils.create-token-slot(color, text-color);
       }
@@ -85,7 +84,6 @@ $_tokens: tokens-mtx-highlight-box.$prefix, tokens-mtx-highlight-box.get-token-s
     justify-content: space-between;
     margin: 0;
   }
-
 
 }
 
