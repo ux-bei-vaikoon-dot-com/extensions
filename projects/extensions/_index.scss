@@ -23,9 +23,9 @@ split-color, split-typography, split-density, split-base, split-overrides;
 @forward './tooltip/tooltip-theme' as tooltip-* show tooltip-theme,
 tooltip-color, tooltip-typography, tooltip-density, tooltip-base, tooltip-overrides;
 @forward './highlight-box/highlight-box-theme' as highlight-box-* show highlight-box-theme,
-highlight-box-color, highlight-box-typography, highlight-box-density, highlight-box-base;
+highlight-box-color, highlight-box-typography, highlight-box-density, highlight-box-base, highlight-box-overrides;
 @forward './file-upload/file-upload-theme' as file-upload-* show file-upload-theme,
-file-upload-color, file-upload-typography, file-upload-density, file-upload-base;
+file-upload-color, file-upload-typography, file-upload-density, file-upload-base, file-upload-overrides;
 
 @forward './core/theming/definition' show define-theme, define-colors, define-typography,
 define-density;

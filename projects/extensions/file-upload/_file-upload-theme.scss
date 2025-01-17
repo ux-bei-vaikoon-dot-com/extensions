@@ -11,8 +11,10 @@
   }
   @else {
     @include mat.private-current-selector-or-root() {
-      @include token-utils.create-token-values(tokens-mtx-file-upload.$prefix,
-        tokens-mtx-file-upload.get-unthemable-tokens());
+      @include token-utils.create-token-values(
+        tokens-mtx-file-upload.$prefix,
+        tokens-mtx-file-upload.get-unthemable-tokens()
+      );
     }
   }
 }
@@ -23,8 +25,10 @@
   }
   @else {
     @include mat.private-current-selector-or-root() {
-      @include token-utils.create-token-values(tokens-mtx-file-upload.$prefix,
-        tokens-mtx-file-upload.get-color-tokens($theme));
+      @include token-utils.create-token-values(
+        tokens-mtx-file-upload.$prefix,
+        tokens-mtx-file-upload.get-color-tokens($theme)
+      );
     }
   }
 }
@@ -33,7 +37,14 @@
   @if mat.get-theme-version($theme) == 1 {
     @include _theme-from-tokens(inspection.get-theme-tokens($theme, typography));
   }
-  @else {}
+  @else {
+    @include mat.private-current-selector-or-root() {
+      @include token-utils.create-token-values(
+        tokens-mtx-file-upload.$prefix,
+        tokens-mtx-file-upload.get-typography-tokens($theme)
+      );
+    }
+  }
 }
 
 @mixin density($theme) {
@@ -42,11 +53,28 @@
   }
   @else {
     @include mat.private-current-selector-or-root() {
-      @include token-utils.create-token-values(tokens-mtx-file-upload.$prefix,
-        tokens-mtx-file-upload.get-density-tokens($theme));
+      @include token-utils.create-token-values(
+        tokens-mtx-file-upload.$prefix,
+        tokens-mtx-file-upload.get-density-tokens($theme)
+      );
     }
   }
 }
+
+/// Defines the tokens that will be available in the `overrides` mixin and for docs extraction.
+@function _define-overrides() {
+  @return (
+    (
+      namespace: tokens-mtx-file-upload.$prefix,
+      tokens: tokens-mtx-file-upload.get-token-slots(),
+    ),
+  );
+}
+
+@mixin overrides($tokens: ()) {
+  @include token-utils.batch-create-token-values($tokens, _define-overrides()...);
+}
+
 
 @mixin theme($theme) {
   @include mat.private-check-duplicate-theme-styles($theme, 'mtx-file-upload') {
